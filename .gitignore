@@ -127,4 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-log/*
+
+# Project related 
+log/
+SR-GNN-master/datasets/sample/
+SR-GNN-master/datasets/diginetica/
+SR-GNN-master/datasets/sample_train-item-views.csv
