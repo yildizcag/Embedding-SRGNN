@@ -1,0 +1,4 @@
+embeddings {
+  tensor_name: "embeddings/Variable:0"
+  metadata_path: "c:\\Users\\akker\\Desktop\\SR-GNN-master\\tensorflow_code\\log\\metadata.tsv"
+}

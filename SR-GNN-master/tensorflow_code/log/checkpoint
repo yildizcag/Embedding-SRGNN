@@ -1,0 +1,2 @@
+model_checkpoint_path: "c:\\Users\\akker\\Desktop\\SR-GNN-master\\tensorflow_code\\log\\model.ckpt"
+all_model_checkpoint_paths: "c:\\Users\\akker\\Desktop\\SR-GNN-master\\tensorflow_code\\log\\model.ckpt"
