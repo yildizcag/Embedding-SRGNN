@@ -86,8 +86,8 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
 
     # Input data.
     with tf.name_scope('inputs'):
-      train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
-      train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
+      train_inputs = tf.placeholder(tf.int32, shape=[200])
+      train_labels = tf.placeholder(tf.int32, shape=[200, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
     # Ops and variables pinned to the CPU because of missing GPU implementation
@@ -162,8 +162,25 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
     average_loss = 0
     for step in xrange(num_steps):
       batch_inputs, batch_labels = generate_batch(batch_size, num_skips, skip_window, data)
-      feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
+      
+      for x in range(200-len(batch_inputs)):
+        batch_inputs = np.append(batch_inputs,0)
 
+
+      temp_arr = []
+      for x in range(len(batch_labels)):
+        temp_arr.append([batch_labels[x]])
+        
+      for x in range(200-len(batch_labels)):
+        temp_arr.append([0])
+      
+
+      
+
+      feed_dict = {train_inputs: batch_inputs, train_labels: temp_arr}
+
+
+      
       # Define metadata variable.
       run_metadata = tf.RunMetadata()
 
@@ -175,7 +192,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       _, summary, loss_val = session.run([optimizer, merged, loss],
                                           feed_dict=feed_dict,
                                           run_metadata=run_metadata)
-      average_loss += loss_val
+      average_loss += loss_val 
 
       # Add returned summaries to writer in each step.
       writer.add_summary(summary, step)
@@ -200,9 +217,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
           nearest = (-sim[i, :]).argsort()[1:top_k + 1]
           log_str = 'Nearest to %s:' % valid_word
 
-          print(
-              log_str,
-              ', '.join([reverse_dictionary[nearest[k]] for k in range(top_k)]))
+          print (step,"  ",num_steps)
     final_embeddings = normalized_embeddings.eval()
 
     # Write corresponding labels for the embeddings.
