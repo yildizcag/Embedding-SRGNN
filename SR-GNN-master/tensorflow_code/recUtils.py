@@ -203,7 +203,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       if step % 2000 == 0:
         if step > 0:
           average_loss /= 2000
-        # The average loss is an estimate of the loss over the last 2000
+        # The average loss is an estimate of the loss over the last 20001
         # batches.
         print('Average loss at step ', step, ': ', average_loss)
         average_loss = 0
