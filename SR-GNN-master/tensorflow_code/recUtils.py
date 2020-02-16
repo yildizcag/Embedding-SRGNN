@@ -55,8 +55,7 @@ def serializeInputMatrix(data,sw):
         for y in range(len(data[0][x])):
             input_matrix.append(data[0][x][y])
         input_matrix.append(data[1][x])
-        for y in range(sw):
-            input_matrix.append('#')
+        input_matrix.append('#')
     
     return input_matrix
 
@@ -76,11 +75,13 @@ def build_dataset(words, n_words):
     reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
     return data, count, dictionary, reversed_dictionary
 
-def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sampled, num_skips, skip_window, vocabulary_size, log_dir):
+def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sampled, num_skips, skip_window, log_dir):
+  vocabulary_size = len(reverse_dictionary)
   graph = tf.Graph()
   valid_size = 16  # Random set of words to evaluate similarity on.
   valid_window = 100  # Only pick dev samples in the head of the distribution.
   valid_examples = np.random.choice(valid_window, valid_size, replace=False)
+  all_examples = np.random.choice(vocabulary_size, int(vocabulary_size/16), replace=False)
 
   with graph.as_default():
 
@@ -89,7 +90,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       train_inputs = tf.placeholder(tf.int32, shape=[200])
       train_labels = tf.placeholder(tf.int32, shape=[200, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
-
+      all_dataset = tf.constant(all_examples, dtype=tf.int32)
     # Ops and variables pinned to the CPU because of missing GPU implementation
     with tf.device('/cpu:0'):
       # Look up embeddings for inputs.
@@ -133,10 +134,12 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
     # embeddings.
     norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keepdims=True))
     normalized_embeddings = embeddings / norm
-    valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings,
-                                              valid_dataset)
+    valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings,valid_dataset)
+    all_embeddings = tf.nn.embedding_lookup(normalized_embeddings,all_dataset)
     similarity = tf.matmul(
         valid_embeddings, normalized_embeddings, transpose_b=True)
+    allSimilarity = tf.matmul(
+        all_embeddings, normalized_embeddings, transpose_b=True)
 
     # Merge all summaries.
     merged = tf.summary.merge_all()
@@ -193,14 +196,14 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
                                           feed_dict=feed_dict,
                                           run_metadata=run_metadata)
       average_loss += loss_val 
-
       # Add returned summaries to writer in each step.
       writer.add_summary(summary, step)
       # Add metadata to visualize the graph for the last run.
       if step == (num_steps - 1):
         writer.add_run_metadata(run_metadata, 'step%d' % step)
-
-      if step % 2000 == 0:
+      if not (np.asarray([k.max() for k in allSimilarity.eval()]).max() < 1.1 and np.asarray([k.min() for k in allSimilarity.eval()]).min() > -1.1):
+        print('Sum tink iz ronk')
+      if step % 100 == 0: # 2000
         if step > 0:
           average_loss /= 2000
         # The average loss is an estimate of the loss over the last 20001
@@ -217,7 +220,8 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
           nearest = (-sim[i, :]).argsort()[1:top_k + 1]
           log_str = 'Nearest to %s:' % valid_word
 
-          print (step,"  ",num_steps)
+          print (log_str,
+              ', '.join([str(reverse_dictionary[nearest[k]]) for k in range(top_k)]))
     final_embeddings = normalized_embeddings.eval()
 
     # Write corresponding labels for the embeddings.

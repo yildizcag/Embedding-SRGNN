@@ -184,7 +184,7 @@ def word2vec_basic(log_dir):
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
     # Ops and variables pinned to the CPU because of missing GPU implementation
-    with tf.device('/cpu:0'):
+    with tf.device('/gpu:0'):
       # Look up embeddings for inputs.
       with tf.name_scope('embeddings'):
         embeddings = tf.Variable(
@@ -265,7 +265,7 @@ def word2vec_basic(log_dir):
       # Also, evaluate the merged op to get all summaries from the returned
       # "summary" variable. Feed metadata variable to session for visualizing
       # the graph in TensorBoard.
-      akker, summary, loss_val = session.run([optimizer, merged, loss],
+      _, summary, loss_val = session.run([optimizer, merged, loss],
                                          feed_dict=feed_dict,
                                          run_metadata=run_metadata)
       average_loss += loss_val

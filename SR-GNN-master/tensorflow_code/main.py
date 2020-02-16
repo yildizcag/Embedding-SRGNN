@@ -44,8 +44,8 @@ parser.add_argument('--numSampled', type=int, default=64, help='number of negati
   #embedding_size = 128  # Dimension of the embedding vector.
  # skip_window = 1  # How many words to consider left and right.
 opt = parser.parse_args()
-train_data = pickle.load(open('../datasets/' + opt.dataset + '/train.txt', 'rb'))
-test_data = pickle.load(open('../datasets/' + opt.dataset + '/test.txt', 'rb'))
+train_data = pickle.load(open('./SR-GNN-master/datasets/' + opt.dataset + '/train.txt', 'rb'))
+test_data = pickle.load(open('./SR-GNN-master/datasets/' + opt.dataset + '/test.txt', 'rb'))
 #train_data[0][0] = train_data[0][0].append('1')
 t = train_data[0][4] + [train_data[1][4]]
 print(len(train_data[0]))
@@ -57,7 +57,7 @@ allSessionsLength = len(ready2GoMatrix)
 data, count, unused_dictionary, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength)
 del ready2GoMatrix
 recUtils.generate_batch(opt.sw, opt.batchSizeW2V, opt.numSkips,data)
-recUtils.train_graph(data, reverse_dictionary, opt.batchSizeW2V, opt.embeddingSize, opt.numSampled, opt.numSkips, opt.sw, allSessionsLength, './')
+recUtils.train_graph(data, reverse_dictionary, opt.batchSizeW2V, opt.embeddingSize, opt.numSampled, opt.numSkips, opt.sw, './')
 
 
 # all_train_seq = pickle.load(open('../datasets/' + opt.dataset + '/all_train_seq.txt', 'rb'))

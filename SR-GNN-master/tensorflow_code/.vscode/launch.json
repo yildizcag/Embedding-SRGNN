@@ -8,7 +8,7 @@
             "name": "Python: Geçerli Dosya",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "${file}/main.py",
             "console": "integratedTerminal",
             "args":["--dataset","diginetica"]
         }
