@@ -27,7 +27,7 @@ def generate_batch(skip_window, batch_size, num_skips, data):
     assert num_skips <= 2 * skip_window
     batch = np.ndarray(shape=(batch_size), dtype=np.int32)
     labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-    span = 2 * skip_window + 1  # [ skip_window target skip_window ]
+    span = skip_window + 1  # [ skip_window target skip_window ]
     buffer = collections.deque(maxlen=span)  # pylint: disable=redefined-builtin
     if data_index + span > len(data):
         data_index = 0
@@ -61,21 +61,23 @@ def serializeInputMatrix(data,sw):
 
 def build_dataset(words, n_words):
     """Process raw inputs into a dataset."""
-    count = [['UNK', -1]]
+    #count = [['UNK', -1]]
+    count = []
     count.extend(collections.Counter(words).most_common(n_words - 1))
     dictionary = {word: index for index, (word, _) in enumerate(count)}
-    data = []
-    unk_count = 0
-    for word in words:
-        index = dictionary.get(word, 0)
-        if index == 0:  # dictionary['UNK']
-            unk_count += 1
-        data.append(index)
-    count[0][1] = unk_count
+    data = [dictionary.get(word) for word in words]
+    # unk_count = 0
+    # for word in words:
+    #     index = dictionary.get(word, 0)
+    #     if index == 0:  # dictionary['UNK']
+    #         unk_count += 1
+    #     data.append(index)
+    # count[0][1] = unk_count
     reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
     return data, count, dictionary, reversed_dictionary
 
-def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sampled, num_skips, skip_window, log_dir):
+def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sampled, num_skips,
+     skip_window, averageSessionLength, log_dir):
   vocabulary_size = len(reverse_dictionary)
   graph = tf.Graph()
   valid_size = 16  # Random set of words to evaluate similarity on.
@@ -87,8 +89,8 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
 
     # Input data.
     with tf.name_scope('inputs'):
-      train_inputs = tf.placeholder(tf.int32, shape=[200])
-      train_labels = tf.placeholder(tf.int32, shape=[200, 1])
+      train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
+      train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
       all_dataset = tf.constant(all_examples, dtype=tf.int32)
     # Ops and variables pinned to the CPU because of missing GPU implementation
@@ -96,7 +98,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       # Look up embeddings for inputs.
       with tf.name_scope('embeddings'):
         embeddings = tf.Variable(
-            tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+            tf.random_uniform([vocabulary_size, embedding_size], 0, 1.0))
         embed = tf.nn.embedding_lookup(embeddings, train_inputs)
 
       # Construct the variables for the NCE loss
@@ -114,14 +116,23 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
     #   http://mccormickml.com/2016/04/19/word2vec-tutorial-the-skip-gram-model/
     #   http://papers.nips.cc/paper/5165-learning-word-embeddings-efficiently-with-noise-contrastive-estimation.pdf
     with tf.name_scope('loss'):
+      # loss = tf.reduce_mean(
+      #     tf.nn.nce_loss(
+      #         weights=nce_weights,
+      #         biases=nce_biases,
+      #         labels=train_labels,
+      #         inputs=embed,
+      #         num_sampled=num_sampled,
+      #         num_classes=vocabulary_size))
       loss = tf.reduce_mean(
-          tf.nn.nce_loss(
+          tf.nn.sampled_softmax_loss(
               weights=nce_weights,
               biases=nce_biases,
               labels=train_labels,
               inputs=embed,
               num_sampled=num_sampled,
-              num_classes=vocabulary_size))
+              num_classes=vocabulary_size,
+              seed = 504171548))
 
     # Add the loss value as a scalar to summary.
     tf.summary.scalar('loss', loss)
@@ -153,7 +164,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
   valid_size = 16  # Random set of words to evaluate similarity on.
   valid_window = 100  # Only pick dev samples in the head of the distribution.
   # Step 5: Begin training.
-  num_steps = 100001
+  num_steps = 10001
   with tf.compat.v1.Session(graph=graph) as session:
     # Open a writer to write summaries.
     writer = tf.summary.FileWriter(log_dir, session.graph)
@@ -164,26 +175,10 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
 
     average_loss = 0
     for step in xrange(num_steps):
-      batch_inputs, batch_labels = generate_batch(batch_size, num_skips, skip_window, data)
-      
-      for x in range(200-len(batch_inputs)):
-        batch_inputs = np.append(batch_inputs,0)
-
-
-      temp_arr = []
-      for x in range(len(batch_labels)):
-        temp_arr.append([batch_labels[x]])
-        
-      for x in range(200-len(batch_labels)):
-        temp_arr.append([0])
-      
-
-      
-
-      feed_dict = {train_inputs: batch_inputs, train_labels: temp_arr}
-
-
-      
+      batch_inputs, batch_labels = generate_batch(skip_window, batch_size, num_skips, data)
+    
+      feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
+  
       # Define metadata variable.
       run_metadata = tf.RunMetadata()
 
@@ -201,9 +196,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       # Add metadata to visualize the graph for the last run.
       if step == (num_steps - 1):
         writer.add_run_metadata(run_metadata, 'step%d' % step)
-      if not (np.asarray([k.max() for k in allSimilarity.eval()]).max() < 1.1 and np.asarray([k.min() for k in allSimilarity.eval()]).min() > -1.1):
-        print('Sum tink iz ronk')
-      if step % 100 == 0: # 2000
+      if step % 1000 == 0: # 2000
         if step > 0:
           average_loss /= 2000
         # The average loss is an estimate of the loss over the last 20001
@@ -227,7 +220,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
     # Write corresponding labels for the embeddings.
     with open(log_dir + '/metadata.tsv', 'w') as f:
       for i in xrange(vocabulary_size):
-        f.write(reverse_dictionary[i] + '\n')
+        f.write(str(reverse_dictionary[i]) + '\n')
 
       # Save the model for checkpoints.
       saver.save(session, os.path.join(log_dir, 'model.ckpt'))

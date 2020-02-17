@@ -155,3 +155,9 @@ events.out.tfevents.*
 .vscode/launch.json
 *settings.json
 SR-GNN-master/tensorflow_code/.vscode/launch.json
+checkpoint
+metadata.tsv
+model.ckpt.data-00000-of-00001
+model.ckpt.index
+model.ckpt.meta
+projector_config.pbtxt

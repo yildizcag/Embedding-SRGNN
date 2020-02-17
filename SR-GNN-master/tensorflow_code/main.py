@@ -29,8 +29,8 @@ parser.add_argument('--step', type=int, default=1, help='gnn propogation steps')
 parser.add_argument('--nonhybrid', action='store_true', help='global preference')
 parser.add_argument('--lr_dc', type=float, default=0.1, help='learning rate decay rate')
 parser.add_argument('--lr_dc_step', type=int, default=3, help='the number of steps after which the learning rate decay')
-parser.add_argument('--sw', type=int, default=2, help='skiptir@')
-parser.add_argument('--batchSizeW2V', type=int, default=128, help='batch size')
+parser.add_argument('--sw', type=int, default=5, help='skiptir@')
+parser.add_argument('--batchSizeW2V', type=int, default=200, help='batch size')
 parser.add_argument('--numSkips', type=int, default=2, help='number of skips')
 parser.add_argument('--embeddingSize', type=int, default=128, help='Dimension of the embedding vector')
 parser.add_argument('--numSampled', type=int, default=64, help='number of negative examples to sample')
@@ -53,11 +53,17 @@ print(len(train_data[0]))
 
 ready2GoMatrix = recUtils.serializeInputMatrix(train_data,opt.sw)
 allSessionsLength = len(ready2GoMatrix)
-
-data, count, unused_dictionary, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength)
+averageSessionLength = int(sum([len(session) + 1 for session in train_data[0]])/len([len(session) + 1 for session in train_data[0]]))
+batchSize=1
+while batchSize < averageSessionLength:
+    batchSize *= 2
+if((batchSize - averageSessionLength) > (averageSessionLength - batchSize/2)):
+    batchSize = int(batchSize/2)
+data, count, unused_dictionary, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength, )
 del ready2GoMatrix
-recUtils.generate_batch(opt.sw, opt.batchSizeW2V, opt.numSkips,data)
-recUtils.train_graph(data, reverse_dictionary, opt.batchSizeW2V, opt.embeddingSize, opt.numSampled, opt.numSkips, opt.sw, './')
+recUtils.generate_batch(batchSize, batchSize, opt.numSkips,data)
+recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
+     batchSize, averageSessionLength, './')
 
 
 # all_train_seq = pickle.load(open('../datasets/' + opt.dataset + '/all_train_seq.txt', 'rb'))
