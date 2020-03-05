@@ -17,8 +17,6 @@ from six.moves import urllib
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-from tensorflow.contrib.tensorboard.plugins import projector
-
 data_index = 0
 
 def generate_batch(skip_window, batch_size, num_skips, data):
@@ -83,7 +81,6 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
   valid_size = 16  # Random set of words to evaluate similarity on.
   valid_window = 100  # Only pick dev samples in the head of the distribution.
   valid_examples = np.random.choice(valid_window, valid_size, replace=False)
-  all_examples = np.random.choice(vocabulary_size, int(vocabulary_size/16), replace=False)
 
   with graph.as_default():
 
@@ -92,13 +89,12 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
       train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
-      all_dataset = tf.constant(all_examples, dtype=tf.int32)
     # Ops and variables pinned to the CPU because of missing GPU implementation
     with tf.device('/cpu:0'):
       # Look up embeddings for inputs.
       with tf.name_scope('embeddings'):
         embeddings = tf.Variable(
-            tf.random_uniform([vocabulary_size, embedding_size], 0, 1.0))
+            tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
         embed = tf.nn.embedding_lookup(embeddings, train_inputs)
 
       # Construct the variables for the NCE loss
@@ -146,11 +142,8 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
     norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keepdims=True))
     normalized_embeddings = embeddings / norm
     valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings,valid_dataset)
-    all_embeddings = tf.nn.embedding_lookup(normalized_embeddings,all_dataset)
     similarity = tf.matmul(
         valid_embeddings, normalized_embeddings, transpose_b=True)
-    allSimilarity = tf.matmul(
-        all_embeddings, normalized_embeddings, transpose_b=True)
 
     # Merge all summaries.
     merged = tf.summary.merge_all()
@@ -164,7 +157,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
   valid_size = 16  # Random set of words to evaluate similarity on.
   valid_window = 100  # Only pick dev samples in the head of the distribution.
   # Step 5: Begin training.
-  num_steps = 10001
+  num_steps = 1001 # increase this above 10k
   with tf.compat.v1.Session(graph=graph) as session:
     # Open a writer to write summaries.
     writer = tf.summary.FileWriter(log_dir, session.graph)
@@ -225,14 +218,6 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
       # Save the model for checkpoints.
       saver.save(session, os.path.join(log_dir, 'model.ckpt'))
 
-      # Create a configuration for visualizing embeddings with the labels in
-      # TensorBoard.
-      config = projector.ProjectorConfig()
-      embedding_conf = config.embeddings.add()
-      embedding_conf.tensor_name = embeddings.name
-      embedding_conf.metadata_path = os.path.join(log_dir, 'metadata.tsv')
-      projector.visualize_embeddings(writer, config)
-
     writer.close()
-    return graph, init, normalized_embeddings,saver
+    return graph, init, final_embeddings,saver
   

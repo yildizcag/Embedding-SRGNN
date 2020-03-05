@@ -62,7 +62,7 @@ if((batchSize - averageSessionLength) > (averageSessionLength - batchSize/2)):
 data, count, unused_dictionary, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength, )
 del ready2GoMatrix
 recUtils.generate_batch(batchSize, batchSize, opt.numSkips,data)
-recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
+_,_,node_embeddings,_ = recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
      batchSize, averageSessionLength, './')
 
 
@@ -89,7 +89,7 @@ for epoch in range(opt.epoch):
     print('start training: ', datetime.datetime.now())
     loss_ = []
     for i, j in zip(slices, np.arange(len(slices))):
-        adj_in, adj_out, alias, item, mask, targets = train_data.get_slice(i)
+        adj_in, adj_out, alias, item, mask, targets = train_data.get_slice(i, node_embeddings)
         _, loss, _ = model.run(fetches, targets, item, adj_in, adj_out, alias,  mask)
         loss_.append(loss)
     loss = np.mean(loss_)
@@ -97,7 +97,7 @@ for epoch in range(opt.epoch):
     print('start predicting: ', datetime.datetime.now())
     hit, mrr, test_loss_ = [], [],[]
     for i, j in zip(slices, np.arange(len(slices))):
-        adj_in, adj_out, alias, item, mask, targets = test_data.get_slice(i)
+        adj_in, adj_out, alias, item, mask, targets = test_data.get_slice(i, node_embeddings)
         scores, test_loss = model.run([model.score_test, model.loss_test], targets, item, adj_in, adj_out, alias,  mask)
         test_loss_.append(test_loss)
         index = np.argsort(scores, 1)[:, -20:]
