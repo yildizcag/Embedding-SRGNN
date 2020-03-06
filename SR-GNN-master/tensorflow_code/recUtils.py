@@ -157,7 +157,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
   valid_size = 16  # Random set of words to evaluate similarity on.
   valid_window = 100  # Only pick dev samples in the head of the distribution.
   # Step 5: Begin training.
-  num_steps = 1001 # increase this above 10k
+  num_steps = 10001 # increase this above 10k
   with tf.compat.v1.Session(graph=graph) as session:
     # Open a writer to write summaries.
     writer = tf.summary.FileWriter(log_dir, session.graph)
@@ -191,7 +191,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
         writer.add_run_metadata(run_metadata, 'step%d' % step)
       if step % 1000 == 0: # 2000
         if step > 0:
-          average_loss /= 2000
+          average_loss /= 1000
         # The average loss is an estimate of the loss over the last 20001
         # batches.
         print('Average loss at step ', step, ': ', average_loss)
