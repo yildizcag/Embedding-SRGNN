@@ -59,10 +59,10 @@ while batchSize < averageSessionLength:
     batchSize *= 2
 if((batchSize - averageSessionLength) > (averageSessionLength - batchSize/2)):
     batchSize = int(batchSize/2)
-data, count, unused_dictionary, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength, )
+data, count, item_id_map, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength, )
 del ready2GoMatrix
 recUtils.generate_batch(batchSize, batchSize, opt.numSkips,data)
-_,_,node_embeddings,_ = recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
+node_embeddings, reverse_dictionary = recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
      batchSize, averageSessionLength, './')
 
 
@@ -89,7 +89,7 @@ for epoch in range(opt.epoch):
     print('start training: ', datetime.datetime.now())
     loss_ = []
     for i, j in zip(slices, np.arange(len(slices))):
-        adj_in, adj_out, alias, item, mask, targets = train_data.get_slice(i, node_embeddings)
+        adj_in, adj_out, alias, item, mask, targets = train_data.get_slice(i, node_embeddings, item_id_map)
         _, loss, _ = model.run(fetches, targets, item, adj_in, adj_out, alias,  mask)
         loss_.append(loss)
     loss = np.mean(loss_)
@@ -97,7 +97,7 @@ for epoch in range(opt.epoch):
     print('start predicting: ', datetime.datetime.now())
     hit, mrr, test_loss_ = [], [],[]
     for i, j in zip(slices, np.arange(len(slices))):
-        adj_in, adj_out, alias, item, mask, targets = test_data.get_slice(i, node_embeddings)
+        adj_in, adj_out, alias, item, mask, targets = test_data.get_slice(i, node_embeddings, item_id_map)
         scores, test_loss = model.run([model.score_test, model.loss_test], targets, item, adj_in, adj_out, alias,  mask)
         test_loss_.append(test_loss)
         index = np.argsort(scores, 1)[:, -20:]
@@ -116,5 +116,5 @@ for epoch in range(opt.epoch):
     if mrr >= best_result[1]:
         best_result[1] = mrr
         best_epoch[1]=epoch
-    print('train_loss:\t%.4f\ttest_loss:\t%4f\tRecall@20:\t%.4f\tMMR@20:\t%.4f\tEpoch:\t%d,\t%d'%
-          (loss, test_loss, best_result[0], best_result[1], best_epoch[0], best_epoch[1]))
+    print('train_loss:\t%.4f\ttest_loss:\t%4f\tBest Recall@20:\t%.4f\tCurrent Recall@20:\t%.4f\tBest MMR@20:\t%.4f\tCurrent MMR@20:\t%.4f\tEpoch:\t%d,\t%d'%
+          (loss, test_loss, best_result[0], hit, best_result[1], mrr, best_epoch[0], best_epoch[1]))

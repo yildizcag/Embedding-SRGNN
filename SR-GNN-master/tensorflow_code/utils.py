@@ -78,7 +78,7 @@ class Data():
         slices[-1] = np.arange(self.length-batch_size, self.length)
         return slices
 
-    def get_slice(self, index, embeddings):
+    def get_slice(self, index, embeddings, itemMap):
         if 1:
             items, n_node, A_in, A_out, alias_inputs = [], [], [], [], []
             for u_input in self.inputs[index]:
@@ -94,7 +94,10 @@ class Data():
                             break
                         u = np.where(node == u_input[i])[0][0]
                         v = np.where(node == u_input[i + 1])[0][0]
-                        u_A[u][v] = np.sum(np.multiply(embeddings[u_input[i]],embeddings[u_input[i + 1]]))
+                        if (u_input[i] in itemMap) and (u_input[i + 1] in itemMap):
+                            u_A[u][v] = np.sum(np.multiply(embeddings[itemMap[u_input[i]]],embeddings[itemMap[u_input[i + 1]]]))
+                        else:
+                            u_A[u][v] = -1
                     u_A_in = u_A
                     u_A_out = u_A.transpose()
 
@@ -114,7 +117,7 @@ class Data():
                             break
                         u = np.where(node == u_input[i])[0][0]
                         v = np.where(node == u_input[i + 1])[0][0]
-                        u_A[u][v] = np.sum(np.multiply(embeddings[u_input[i]],embeddings[u_input[i + 1]]))
+                        u_A[u][v] = np.sum(np.multiply(embeddings[itemMap[u_input[i]]],embeddings[itemMap[u_input[i + 1]]]))
                     A_in.append(-1e7 * (1 - u_A))
                     A_out.append(-1e7 * (1 - u_A.transpose()))
                     alias_inputs.append([np.where(node == i)[0][0] for i in u_input])

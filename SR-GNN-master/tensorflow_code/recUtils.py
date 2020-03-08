@@ -210,14 +210,6 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
               ', '.join([str(reverse_dictionary[nearest[k]]) for k in range(top_k)]))
     final_embeddings = normalized_embeddings.eval()
 
-    # Write corresponding labels for the embeddings.
-    with open(log_dir + '/metadata.tsv', 'w') as f:
-      for i in xrange(vocabulary_size):
-        f.write(str(reverse_dictionary[i]) + '\n')
-
-      # Save the model for checkpoints.
-      saver.save(session, os.path.join(log_dir, 'model.ckpt'))
-
     writer.close()
-    return graph, init, final_embeddings,saver
+    return final_embeddings, reverse_dictionary
   
