@@ -47,7 +47,7 @@ def generate_batch(skip_window, batch_size, num_skips, data):
     data_index = (data_index - span) % len(data)
     return batch, labels
 
-def serializeInputMatrix(data,sw):
+def serializeInputMatrix(data):
     input_matrix = []
     for x in range (len(data[0])):
         for y in range(len(data[0][x])):
@@ -128,7 +128,7 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
               inputs=embed,
               num_sampled=num_sampled,
               num_classes=vocabulary_size,
-              seed = 504171548))
+              seed = 504171553))
 
     # Add the loss value as a scalar to summary.
     tf.summary.scalar('loss', loss)
@@ -157,10 +157,10 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
   valid_size = 16  # Random set of words to evaluate similarity on.
   valid_window = 100  # Only pick dev samples in the head of the distribution.
   # Step 5: Begin training.
-  num_steps = 10001 # increase this above 10k
+  num_steps = 40001 # increase this above 10k
   with tf.compat.v1.Session(graph=graph) as session:
     # Open a writer to write summaries.
-    writer = tf.summary.FileWriter(log_dir, session.graph)
+    # writer = tf.summary.FileWriter(log_dir, session.graph)
 
     # We must initialize all variables before we use them.
     init.run()
@@ -185,10 +185,10 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
                                           run_metadata=run_metadata)
       average_loss += loss_val 
       # Add returned summaries to writer in each step.
-      writer.add_summary(summary, step)
+      # writer.add_summary(summary, step)
       # Add metadata to visualize the graph for the last run.
-      if step == (num_steps - 1):
-        writer.add_run_metadata(run_metadata, 'step%d' % step)
+      # if step == (num_steps - 1):
+      #   writer.add_run_metadata(run_metadata, 'step%d' % step)
       if step % 1000 == 0: # 2000
         if step > 0:
           average_loss /= 1000
@@ -198,18 +198,18 @@ def train_graph(data, reverse_dictionary, batch_size, embedding_size, num_sample
         average_loss = 0
 
       # Note that this is expensive (~20% slowdown if computed every 500 steps)
-      if step % 10000 == 0:
-        sim = similarity.eval()
-        for i in xrange(valid_size):
-          valid_word = reverse_dictionary[valid_examples[i]]
-          top_k = 8  # number of nearest neighbors
-          nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-          log_str = 'Nearest to %s:' % valid_word
+      # if step % 10000 == 0:
+      #   sim = similarity.eval()
+      #   for i in xrange(valid_size):
+      #     valid_word = reverse_dictionary[valid_examples[i]]
+      #     top_k = 8  # number of nearest neighbors
+      #     nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+      #     log_str = 'Nearest to %s:' % valid_word
 
-          print (log_str,
-              ', '.join([str(reverse_dictionary[nearest[k]]) for k in range(top_k)]))
+      #     print (log_str,
+      #         ', '.join([str(reverse_dictionary[nearest[k]]) for k in range(top_k)]))
     final_embeddings = normalized_embeddings.eval()
 
-    writer.close()
+    # writer.close()
     return final_embeddings, reverse_dictionary
   
