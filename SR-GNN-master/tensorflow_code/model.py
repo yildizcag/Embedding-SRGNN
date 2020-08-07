@@ -14,8 +14,8 @@ class Model(object):
         self.out_size = out_size
         self.batch_size = batch_size
         self.mask = tf.placeholder(dtype=tf.float32)
-        self.alias = tf.placeholder(dtype=tf.int32)  # 给给每个输入重新
-        self.item = tf.placeholder(dtype=tf.int32)   # 重新编号的序列构成的矩阵
+        self.alias = tf.placeholder(dtype=tf.int32) 
+        self.item = tf.placeholder(dtype=tf.int32)
         self.tar = tf.placeholder(dtype=tf.int32)
         self.nonhybrid = nonhybrid
         self.stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -33,7 +33,7 @@ class Model(object):
         last_id = tf.gather_nd(self.alias, tf.stack([tf.range(self.batch_size), tf.to_int32(rm)-1], axis=1))
         last_h = tf.gather_nd(re_embedding, tf.stack([tf.range(self.batch_size), last_id], axis=1))
         seq_h = tf.stack([tf.nn.embedding_lookup(re_embedding[i], self.alias[i]) for i in range(self.batch_size)],
-                         axis=0)                                                           #batch_size*T*d
+                         axis=0)                                                           
         last = tf.matmul(last_h, self.nasr_w1)
         seq = tf.matmul(tf.reshape(seq_h, [-1, self.out_size]), self.nasr_w2)
         last = tf.reshape(last, [self.batch_size, 1, -1])

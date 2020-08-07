@@ -15,6 +15,7 @@ import argparse
 import datetime
 import collections
 import recUtils
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', default='sample', help='dataset name: diginetica/yoochoose1_4/yoochoose1_64/sample')
@@ -32,39 +33,55 @@ parser.add_argument('--lr_dc_step', type=int, default=4, help='the number of ste
 parser.add_argument('--numSkips', type=int, default=2, help='number of skips')
 parser.add_argument('--embeddingSize', type=int, default=128, help='Dimension of the embedding vector')
 parser.add_argument('--numSampled', type=int, default=64, help='number of negative examples to sample')
+parser.add_argument('--embeddingModel', required=True, help='Supported embedding models: word2vec/deepwalk/laplacian/LINE/SVD/node2vec')
 
-
-############
-
-
-############
- #batch_size = 128
-  #embedding_size = 128  # Dimension of the embedding vector.
- # skip_window = 1  # How many words to consider left and right.
 opt = parser.parse_args()
+
 train_data = pickle.load(open('./SR-GNN-master/datasets/' + opt.dataset + '/train.txt', 'rb'))
 test_data = pickle.load(open('./SR-GNN-master/datasets/' + opt.dataset + '/test.txt', 'rb'))
-#train_data[0][0] = train_data[0][0].append('1')
 t = train_data[0][4] + [train_data[1][4]]
+
 print(len(train_data[0]))
+if opt.embeddingModel == 'word2vec':
+    if os.path.isfile('./word2vec.csv'):
+        node_embeddings = np.genfromtxt('word2vec.csv', delimiter=',')
+        item_id_map = node_embeddings[:,0]
+        item_id_map = dict(zip(item_id_map,[i for i in range(len(item_id_map))]))
+        node_embeddings = node_embeddings[:,1:-1]
+    else:
+        paragraph = recUtils.serializeInputMatrix(train_data)
+        allSessionsLength = len(paragraph)
+        averageSessionLength = int(sum([len(session) + 1 for session in train_data[0]])/len([len(session) + 1 for session in train_data[0]]))
+        batchSize=1
+        while batchSize < averageSessionLength:
+            batchSize *= 2
+        if((batchSize - averageSessionLength) > (averageSessionLength - batchSize/2)):
+            batchSize = int(batchSize/2)
+        data, item_id_map, reverse_dictionary = recUtils.build_dataset(paragraph, allSessionsLength, )
+        del paragraph
+        recUtils.generate_batch(batchSize, batchSize, opt.numSkips,data)
+        node_embeddings = recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
+            batchSize, averageSessionLength, './')
+        del data, reverse_dictionary
+        nodes = np.array([k for k, v in item_id_map.items()])
+        array_to_text = np.concatenate((np.array([nodes]).T,node_embeddings), axis = 1)
+        np.savetxt("word2vec.csv", array_to_text, delimiter=',', fmt='%s')
+elif opt.embeddingModel == 'deepwalk':
+    node_embeddings = np.genfromtxt('my_emb.csv', delimiter=',')
+elif opt.embeddingModel == 'laplacian':
+    node_embeddings = np.genfromtxt('my_emb.csv', delimiter=',')
+elif opt.embeddingModel == 'LINE':
+    node_embeddings = np.genfromtxt('my_emb.csv', delimiter=',')
+    item_id_map = node_embeddings[:,0]
+    item_id_map = dict(zip(item_id_map,[i for i in range(len(item_id_map))]))
+    node_embeddings = node_embeddings[:,1:-1]
+elif opt.embeddingModel == 'SVD':
+    node_embeddings = np.genfromtxt('my_emb.csv', delimiter=',')
+elif opt.embeddingModel == 'node2vec':
+    node_embeddings = np.genfromtxt('my_emb.csv', delimiter=',')
+else:
+    raise ValueError('[' +opt.embeddingModel +'] embeddingModel is not supported!')
 
-
-ready2GoMatrix = recUtils.serializeInputMatrix(train_data)
-allSessionsLength = len(ready2GoMatrix)
-averageSessionLength = int(sum([len(session) + 1 for session in train_data[0]])/len([len(session) + 1 for session in train_data[0]]))
-batchSize=1
-while batchSize < averageSessionLength:
-    batchSize *= 2
-if((batchSize - averageSessionLength) > (averageSessionLength - batchSize/2)):
-    batchSize = int(batchSize/2)
-data, count, item_id_map, reverse_dictionary = recUtils.build_dataset(ready2GoMatrix, allSessionsLength, )
-del ready2GoMatrix
-recUtils.generate_batch(batchSize, batchSize, opt.numSkips,data)
-node_embeddings, reverse_dictionary = recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,
-     batchSize, averageSessionLength, './')
-
-
-# all_train_seq = pickle.load(open('../datasets/' + opt.dataset + '/all_train_seq.txt', 'rb'))
 if opt.dataset == 'diginetica':
     n_node = 43098
 elif opt.dataset == 'yoochoose1_64' or opt.dataset == 'yoochoose1_4':

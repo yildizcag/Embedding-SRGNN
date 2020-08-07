@@ -95,7 +95,7 @@ class Data():
                         u = np.where(node == u_input[i])[0][0]
                         v = np.where(node == u_input[i + 1])[0][0]
                         if (u_input[i] in itemMap) and (u_input[i + 1] in itemMap):
-                            u_A[u][v] = np.sum(np.multiply(embeddings[itemMap[u_input[i]]],embeddings[itemMap[u_input[i + 1]]]))
+                            u_A[u][v] = 1/(np.linalg.norm(embeddings[itemMap[u_input[i]]] - embeddings[itemMap[u_input[i + 1]]]) + 0.000001)
                         else:
                             u_A[u][v] = -1
                     u_A_in = u_A
@@ -117,7 +117,7 @@ class Data():
                             break
                         u = np.where(node == u_input[i])[0][0]
                         v = np.where(node == u_input[i + 1])[0][0]
-                        u_A[u][v] = np.sum(np.multiply(embeddings[itemMap[u_input[i]]],embeddings[itemMap[u_input[i + 1]]]))
+                        u_A[u][v] = 1/(np.linalg.norm(embeddings[itemMap[u_input[i]]] - embeddings[itemMap[u_input[i + 1]]]) + 0.000001)
                     A_in.append(-1e7 * (1 - u_A))
                     A_out.append(-1e7 * (1 - u_A.transpose()))
                     alias_inputs.append([np.where(node == i)[0][0] for i in u_input])

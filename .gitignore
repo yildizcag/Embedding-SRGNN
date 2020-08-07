@@ -161,3 +161,4 @@ model.ckpt.data-00000-of-00001
 model.ckpt.index
 model.ckpt.meta
 projector_config.pbtxt
+word2vec.csv
