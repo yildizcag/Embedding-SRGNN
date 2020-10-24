@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time : 2018/10/17 5:40
-# @Author : {ZM7}
-# @File : main.py
-# @Software: PyCharm
-
 from __future__ import division
 
 import numpy as np
@@ -88,7 +81,7 @@ elif opt.dataset == 'yoochoose1_64' or opt.dataset == 'yoochoose1_4':
     n_node = 37484
 else:
     n_node = 310
-# g = build_graph(all_train_seq)
+
 train_data = Data(train_data, sub_graph=True, method=opt.method, shuffle=True)
 test_data = Data(test_data, sub_graph=True, method=opt.method, shuffle=False)
 model = GGNN(hidden_size=opt.hiddenSize, out_size=opt.hiddenSize, batch_size=opt.batchSize, n_node=n_node,

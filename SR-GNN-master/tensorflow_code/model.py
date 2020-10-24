@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time : 2018/10/16 4:36
-# @Author : {ZM7}
-# @File : model.py
-# @Software: PyCharm
 import tensorflow as tf
 import math
 
