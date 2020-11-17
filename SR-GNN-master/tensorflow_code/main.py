@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time : 2018/10/17 5:40
-# @Author : {ZM7}
-# @File : main.py
-# @Software: PyCharm
-
 from __future__ import division
 
 import numpy as np
@@ -57,7 +50,7 @@ if opt.embeddingModel == 'word2vec':
             batchSize *= 2
         if((batchSize - averageSessionLength) > (averageSessionLength - batchSize/2)):
             batchSize = int(batchSize/2)
-        data, item_id_map, reverse_dictionary = recUtils.build_dataset(paragraph, allSessionsLength, )
+        data, item_id_map, reverse_dictionary = recUtils.build_dataset(paragraph, allSessionsLength )
         del paragraph
         recUtils.generate_batch(batchSize, batchSize, opt.numSkips,data)
         node_embeddings = recUtils.train_graph(data, reverse_dictionary, batchSize, opt.embeddingSize, opt.numSampled, opt.numSkips,

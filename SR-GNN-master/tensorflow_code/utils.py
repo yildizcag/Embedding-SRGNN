@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time : 2018/9/23 2:52
-# @Author : {ZM7}
-# @File : utils.py
-# @Software: PyCharm
-
 import networkx as nx
 import numpy as np
 
